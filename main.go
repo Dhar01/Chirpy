@@ -8,12 +8,15 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
-	server := http.Server{
+	srv := http.Server{
 		Handler: mux,
-		Addr: ":8080",
+		Addr:    ":8080",
 	}
 
-	err := server.ListenAndServe()
+	mux.Handle("/", http.FileServer(http.Dir(".")))
+	mux.Handle("/assets", http.FileServer(http.Dir("./assets")))
+
+	err := srv.ListenAndServe()
 	if err != nil {
 		log.Printf(err.Error())
 	}
