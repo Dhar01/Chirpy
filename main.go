@@ -1,9 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"sync/atomic"
 )
+
+type apiConfig struct {
+	fileserverHits atomic.Int32
+}
 
 func main() {
 	mux := http.NewServeMux()
@@ -13,9 +19,18 @@ func main() {
 		Addr:    ":8080",
 	}
 
-	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
-	mux.Handle("/app/assets/", http.StripPrefix("/app/assets/", http.FileServer(http.Dir("./app/assets"))))
+	apiCfg := apiConfig{}
+
+	handler := http.StripPrefix("/app/", http.FileServer(http.Dir("./app")))
+	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
+
+
+	// handlerAssets := http.StripPrefix("/app/assets/", http.FileServer(http.Dir("./app/assets")))
+	// mux.Handle("/app/assets/", apiCfg.middlewareMetricsInc(handlerAssets))
+
 	mux.HandleFunc("/healthz", handlerReadiness)
+	mux.HandleFunc("/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("/reset", apiCfg.handlerReset)
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -27,4 +42,25 @@ func handlerReadiness(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.fileserverHits.Add(1)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+
+	value := fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())
+
+	w.Write([]byte(value))
+}
+
+func (cfg *apiConfig) handlerReset(w http.ResponseWriter, _ *http.Request) {
+	cfg.fileserverHits.Store(0)
+	w.WriteHeader(http.StatusOK)
 }
