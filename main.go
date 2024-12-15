@@ -24,13 +24,12 @@ func main() {
 	handler := http.StripPrefix("/app/", http.FileServer(http.Dir("./app")))
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
 
-
 	// handlerAssets := http.StripPrefix("/app/assets/", http.FileServer(http.Dir("./app/assets")))
 	// mux.Handle("/app/assets/", apiCfg.middlewareMetricsInc(handlerAssets))
 
-	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-	mux.HandleFunc("GET /api/metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("POST /api/reset", apiCfg.handlerReset)
+	mux.HandleFunc("/api/healthz", handlerReadiness)
+	mux.HandleFunc("/admin/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("/admin/reset", apiCfg.handlerReset)
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -39,6 +38,11 @@ func main() {
 }
 
 func handlerReadiness(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
@@ -51,16 +55,33 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})
 }
 
-func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
-	value := fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())
+	value := fmt.Sprintf(
+		`<html>
+		<body>
+			<h1>Welcome, Chirpy Admin</h1>
+			<p>Chirpy has been visited %d times!</p>
+		</body>
+	</html>`,
+		cfg.fileserverHits.Load())
 
 	w.Write([]byte(value))
 }
 
-func (cfg *apiConfig) handlerReset(w http.ResponseWriter, _ *http.Request) {
+func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	cfg.fileserverHits.Store(0)
 	w.WriteHeader(http.StatusOK)
 }
