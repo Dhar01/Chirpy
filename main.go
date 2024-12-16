@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -30,6 +31,7 @@ func main() {
 	mux.HandleFunc("/api/healthz", handlerReadiness)
 	mux.HandleFunc("/admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("/admin/reset", apiCfg.handlerReset)
+	mux.HandleFunc("/api/validate_chirp", handlerValidate)
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -84,4 +86,41 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 
 	cfg.fileserverHits.Store(0)
 	w.WriteHeader(http.StatusOK)
+}
+
+func handlerValidate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	type chirp struct {
+		Body string `json:"body"`
+	}
+
+	param := chirp{}
+
+	type returnVal struct {
+		Valid *bool   `json:"valid,omitempty"`
+		Error string `json:"error,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
+		writeJSON(w, http.StatusInternalServerError, returnVal{Error: "Something went wrong"})
+		return
+	}
+
+	if len(param.Body) > 140 {
+		writeJSON(w, http.StatusBadRequest, returnVal{Error: "Chirp is too long"})
+		return
+	}
+
+	validTrue := true
+	writeJSON(w, http.StatusOK, returnVal{Valid: &validTrue})
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(v)
 }
