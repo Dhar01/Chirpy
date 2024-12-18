@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 )
 
@@ -101,8 +102,9 @@ func handlerValidate(w http.ResponseWriter, r *http.Request) {
 	param := chirp{}
 
 	type returnVal struct {
-		Valid *bool   `json:"valid,omitempty"`
-		Error string `json:"error,omitempty"`
+		// Valid *bool   `json:"valid,omitempty"`
+		CleanBody string `json:"cleaned_body"`
+		Error     string `json:"error,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
@@ -123,4 +125,32 @@ func writeJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(v)
+}
+
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+
+}
+
+func cleanBodyMsg(msg string) string {
+	profane := []string{"kerfuffle", "sharbert", "fornax"}
+
+	msg = strings.ToLower(msg)
+	splitMsg := strings.Split(msg, " ")
+
+
+	for _, msg := range splitMsg {
+		for _, fane := range profane {
+			if msg == fane {
+				strings.Join("****", " ")
+			} else {
+				strings.Join(msg, " ")
+			}
+		}
+	}
+
+	return msg
 }
