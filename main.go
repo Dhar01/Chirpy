@@ -89,6 +89,12 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+type returnVal struct {
+	// Valid *bool   `json:"valid,omitempty"`
+	CleanBody string `json:"cleaned_body"`
+	Error     string `json:"error,omitempty"`
+}
+
 func handlerValidate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -101,56 +107,68 @@ func handlerValidate(w http.ResponseWriter, r *http.Request) {
 
 	param := chirp{}
 
-	type returnVal struct {
-		// Valid *bool   `json:"valid,omitempty"`
-		CleanBody string `json:"cleaned_body"`
-		Error     string `json:"error,omitempty"`
-	}
+	// type returnVal struct {
+	// 	// Valid *bool   `json:"valid,omitempty"`
+	// 	CleanBody string `json:"cleaned_body"`
+	// 	Error     string `json:"error,omitempty"`
+	// }
 
 	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
-		writeJSON(w, http.StatusInternalServerError, returnVal{Error: "Something went wrong"})
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
 	if len(param.Body) > 140 {
-		writeJSON(w, http.StatusBadRequest, returnVal{Error: "Chirp is too long"})
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
 		return
 	}
 
-	validTrue := true
-	writeJSON(w, http.StatusOK, returnVal{Valid: &validTrue})
+	cleanBody := cleanBodyMsg(param.Body)
+	response := returnVal{
+		CleanBody: cleanBody,
+	}
+
+	respondWithJSON(w, http.StatusOK, response)
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) error {
+func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
+	return json.NewEncoder(w).Encode(payload)
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
+	response := returnVal{
+		Error: msg,
+	}
 
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-
+	respondWithJSON(w, code, response)
 }
 
 func cleanBodyMsg(msg string) string {
 	profane := []string{"kerfuffle", "sharbert", "fornax"}
 
-	msg = strings.ToLower(msg)
 	splitMsg := strings.Split(msg, " ")
 
+	cleanWords := make([]string, 0, len(splitMsg))
 
-	for _, msg := range splitMsg {
-		for _, fane := range profane {
-			if msg == fane {
-				strings.Join("****", " ")
-			} else {
-				strings.Join(msg, " ")
+	for _, word := range splitMsg {
+		isProfane := false
+		lowerWord := strings.ToLower(word)
+
+		for _, profaneWord := range profane {
+			if lowerWord == profaneWord {
+				isProfane = true
+				break
 			}
+		}
+
+		if isProfane {
+			cleanWords = append(cleanWords, "****")
+		} else {
+			cleanWords = append(cleanWords, word)
 		}
 	}
 
-	return msg
+	return strings.Join(cleanWords, " ")
 }
