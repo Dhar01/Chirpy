@@ -52,10 +52,11 @@ func main() {
 	mux.HandleFunc("/admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("/admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("/api/validate_chirp", handlerValidate)
+	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
 
 	err = srv.ListenAndServe()
 	if err != nil {
-		log.Printf(err.Error())
+		log.Printf("%v\n", err.Error())
 	}
 }
 
