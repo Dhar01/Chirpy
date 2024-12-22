@@ -38,7 +38,12 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var user User
+	user := User{
+		ID: person.ID,
+		CreatedAt: person.CreatedAt,
+		UpdatedAt: person.UpdatedAt,
+		Email: person.Email,
+	}
 
 	w.WriteHeader(http.StatusCreated)
 
