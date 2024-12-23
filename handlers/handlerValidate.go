@@ -24,12 +24,6 @@ func HandlerValidate(w http.ResponseWriter, r *http.Request) {
 
 	param := chirp{}
 
-	// type returnVal struct {
-	// 	// Valid *bool   `json:"valid,omitempty"`
-	// 	CleanBody string `json:"cleaned_body"`
-	// 	Error     string `json:"error,omitempty"`
-	// }
-
 	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return

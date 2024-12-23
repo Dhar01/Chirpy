@@ -47,6 +47,7 @@ func main() {
 	mux.HandleFunc("/admin/reset", apiCfg.HandlerReset)
 	mux.HandleFunc("/api/validate_chirp", hnd.HandlerValidate)
 	mux.HandleFunc("/api/users", apiCfg.HandlerCreateUser)
+	mux.HandleFunc("/api/chirps", apiCfg.HandlerChirps)
 
 	err = srv.ListenAndServe()
 	if err != nil {
