@@ -11,7 +11,7 @@ import (
 
 type createChirpRequest struct {
 	Body    string    `json:"body"`
-	User_ID uuid.UUID `json:"user_id"`
+	UserID uuid.UUID `json:"user_id"`
 }
 
 type Chirp struct {
@@ -42,7 +42,7 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 
 	info, err := cfg.Queries.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   req.Body,
-		UserID: req.User_ID,
+		UserID: req.UserID,
 	})
 
 	if err != nil {

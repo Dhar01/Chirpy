@@ -42,12 +42,14 @@ func main() {
 	// handlerAssets := http.StripPrefix("/app/assets/", http.FileServer(http.Dir("./app/assets")))
 	// mux.Handle("/app/assets/", apiCfg.middlewareMetricsInci(handlerAssets))
 
-	mux.HandleFunc("/api/healthz", hnd.HandlerReadiness)
 	mux.HandleFunc("/admin/metrics", apiCfg.HandlerMetrics)
 	mux.HandleFunc("/admin/reset", apiCfg.HandlerReset)
-	mux.HandleFunc("/api/validate_chirp", hnd.HandlerValidate)
+
+	mux.HandleFunc("/api/healthz", hnd.HandlerReadiness)
 	mux.HandleFunc("/api/users", apiCfg.HandlerCreateUser)
 	mux.HandleFunc("/api/chirps", apiCfg.HandlerChirps)
+
+	mux.HandleFunc("/api/validate_chirp", hnd.HandlerValidate)
 
 	err = srv.ListenAndServe()
 	if err != nil {
