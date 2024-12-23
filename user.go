@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Dhar01/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -46,7 +45,6 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusCreated)
-
 	if err := json.NewEncoder(w).Encode(&user); err != nil {
 		http.Error(w, "An error occurred", http.StatusInternalServerError)
 		return

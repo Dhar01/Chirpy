@@ -105,6 +105,17 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg.fileserverHits.Store(0)
+	if platform := os.Getenv("PLATFORM"); platform != "dev" {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	if err := cfg.queries.DeleteAllUsers(r.Context()); err != nil {
+		http.Error(w, "An error occurred while resetting users", http.StatusInternalServerError)
+		return
+	}
+
+	// cfg.fileserverHits.Store(0)
+
 	w.WriteHeader(http.StatusOK)
 }
