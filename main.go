@@ -2,21 +2,15 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"sync/atomic"
 
+	hnd "github.com/Dhar01/Chirpy/handlers"
 	"github.com/Dhar01/Chirpy/internal/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
-
-type apiConfig struct {
-	fileserverHits atomic.Int32
-	queries        *database.Queries
-}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -38,84 +32,24 @@ func main() {
 		Addr:    ":8080",
 	}
 
-	apiCfg := apiConfig{
-		queries: dbQueries,
+	apiCfg := hnd.ApiConfig{
+		Queries: dbQueries,
 	}
 
 	handler := http.StripPrefix("/app/", http.FileServer(http.Dir("./app")))
-	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
+	mux.Handle("/app/", apiCfg.MiddlewareMetricsInc(handler))
 
 	// handlerAssets := http.StripPrefix("/app/assets/", http.FileServer(http.Dir("./app/assets")))
-	// mux.Handle("/app/assets/", apiCfg.middlewareMetricsInc(handlerAssets))
+	// mux.Handle("/app/assets/", apiCfg.middlewareMetricsInci(handlerAssets))
 
-	mux.HandleFunc("/api/healthz", handlerReadiness)
-	mux.HandleFunc("/admin/metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("/admin/reset", apiCfg.handlerReset)
-	mux.HandleFunc("/api/validate_chirp", handlerValidate)
-	mux.HandleFunc("/api/users", apiCfg.createUserHandler)
+	mux.HandleFunc("/api/healthz", hnd.HandlerReadiness)
+	mux.HandleFunc("/admin/metrics", apiCfg.HandlerMetrics)
+	mux.HandleFunc("/admin/reset", apiCfg.HandlerReset)
+	mux.HandleFunc("/api/validate_chirp", hnd.HandlerValidate)
+	mux.HandleFunc("/api/users", apiCfg.HandlerCreateUser)
 
 	err = srv.ListenAndServe()
 	if err != nil {
 		log.Printf("%v\n", err.Error())
 	}
-}
-
-func handlerReadiness(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
-}
-
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-
-	value := fmt.Sprintf(
-		`<html>
-		<body>
-			<h1>Welcome, Chirpy Admin</h1>
-			<p>Chirpy has been visited %d times!</p>
-		</body>
-	</html>`,
-		cfg.fileserverHits.Load())
-
-	w.Write([]byte(value))
-}
-
-func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if platform := os.Getenv("PLATFORM"); platform != "dev" {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-
-	if err := cfg.queries.DeleteAllUsers(r.Context()); err != nil {
-		http.Error(w, "An error occurred while resetting users", http.StatusInternalServerError)
-		return
-	}
-
-	// cfg.fileserverHits.Store(0)
-
-	w.WriteHeader(http.StatusOK)
 }

@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ type createUserRequest struct {
 	Email string `json:"email"`
 }
 
-func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
@@ -31,17 +31,17 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	person, err := cfg.queries.CreateUser(r.Context(), req.Email)
+	person, err := cfg.Queries.CreateUser(r.Context(), req.Email)
 	if err != nil {
 		http.Error(w, "An error occurred when creating the user", http.StatusInternalServerError)
 		return
 	}
 
 	user := User{
-		ID: person.ID,
+		ID:        person.ID,
 		CreatedAt: person.CreatedAt,
 		UpdatedAt: person.UpdatedAt,
-		Email: person.Email,
+		Email:     person.Email,
 	}
 
 	w.WriteHeader(http.StatusCreated)

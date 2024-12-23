@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type returnVal struct {
 	Error     string `json:"error,omitempty"`
 }
 
-func handlerValidate(w http.ResponseWriter, r *http.Request) {
+func HandlerValidate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
