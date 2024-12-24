@@ -47,10 +47,9 @@ func main() {
 
 	mux.HandleFunc("/api/healthz", hnd.HandlerReadiness)
 	mux.HandleFunc("/api/users", apiCfg.HandlerCreateUser)
+	mux.HandleFunc("/api/login", apiCfg.HandlerLogin)
 	mux.HandleFunc("/api/chirps", apiCfg.HandlerChirps)
 	mux.HandleFunc("/api/chirps/{chirpID}", apiCfg.HandlerChirps)
-
-	mux.HandleFunc("/api/validate_chirp", hnd.HandlerValidate)
 
 	err = srv.ListenAndServe()
 	if err != nil {
