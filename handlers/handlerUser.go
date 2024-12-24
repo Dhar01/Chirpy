@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Dhar01/Chirpy/internal/auth"
+	"github.com/Dhar01/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +18,8 @@ type User struct {
 }
 
 type createUserRequest struct {
-	Email string `json:"email"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +34,16 @@ func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	person, err := cfg.Queries.CreateUser(r.Context(), req.Email)
+	hashPasswd, err := auth.HashPassword(req.Password)
+	if err != nil {
+		http.Error(w, "can't process password", http.StatusInternalServerError)
+		return
+	}
+
+	person, err := cfg.Queries.CreateUser(r.Context(), database.CreateUserParams{
+		Email:          req.Email,
+		HashedPassword: hashPasswd,
+	})
 	if err != nil {
 		http.Error(w, "An error occurred when creating the user", http.StatusInternalServerError)
 		return
