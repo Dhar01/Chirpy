@@ -82,8 +82,19 @@ func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	// 	log.Printf("Chirp %d: %v", i, chrip)
 	// }
 
+	chirpApis := make([]ChirpApi, len(chirps))
+	for i, chirp := range chirps {
+		chirpApis[i] = ChirpApi{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(chirps); err != nil {
+	if err := json.NewEncoder(w).Encode(chirpApis); err != nil {
 		http.Error(w, "An error occurred", http.StatusInternalServerError)
 		return
 	}
