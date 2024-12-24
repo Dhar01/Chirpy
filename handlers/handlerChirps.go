@@ -9,12 +9,23 @@ import (
 	"github.com/google/uuid"
 )
 
+func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		cfg.handlerCreateChirps(w, r)
+	case http.MethodGet:
+		cfg.handlerGetChirps(w, r)
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 type createChirpRequest struct {
-	Body    string    `json:"body"`
+	Body   string    `json:"body"`
 	UserID uuid.UUID `json:"user_id"`
 }
 
-type Chirp struct {
+type ChirpApi struct {
 	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -22,12 +33,7 @@ type Chirp struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
-func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request) {
 	var req createChirpRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -50,7 +56,7 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chirp := Chirp{
+	chirp := ChirpApi{
 		ID:        info.ID,
 		CreatedAt: info.CreatedAt,
 		UpdatedAt: info.UpdatedAt,
@@ -60,6 +66,24 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(chirp); err != nil {
+		http.Error(w, "An error occurred", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.Queries.GetAllChirps(r.Context())
+	if err != nil {
+		http.Error(w, "can't retrieve chirps", http.StatusInternalServerError)
+		return
+	}
+
+	// for i, chrip := range chirps {
+	// 	log.Printf("Chirp %d: %v", i, chrip)
+	// }
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(chirps); err != nil {
 		http.Error(w, "An error occurred", http.StatusInternalServerError)
 		return
 	}
