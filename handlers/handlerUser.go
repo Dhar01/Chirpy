@@ -18,8 +18,9 @@ type User struct {
 }
 
 type createUserRequest struct {
-	Password string `json:"password"`
-	Email    string `json:"email"`
+	Password  string `json:"password"`
+	Email     string `json:"email"`
+	ExpiresAt string `json:"expires_in_seconds"`
 }
 
 func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) {
