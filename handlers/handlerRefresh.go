@@ -16,7 +16,7 @@ func (cfg *ApiConfig) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := cfg.Queries.GetUserFromRefreshToken(r.Context(), refreshToken)
+	user, err := cfg.DB.GetUserFromRefreshToken(r.Context(), refreshToken)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "couldn't get user from refresh token", err)
 		return

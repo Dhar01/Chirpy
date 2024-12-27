@@ -25,7 +25,7 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	user, err := cfg.Queries.GetUser(r.Context(), req.Email)
+	user, err := cfg.DB.GetUser(r.Context(), req.Email)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
@@ -48,7 +48,7 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := cfg.Queries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+	if err := cfg.DB.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
 		Refreshtoken: refreshToken,
 		UserID:       user.ID,
 	}); err != nil {

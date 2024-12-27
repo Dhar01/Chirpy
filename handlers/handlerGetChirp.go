@@ -7,7 +7,7 @@ import (
 )
 
 func (cfg *ApiConfig) getAllChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.Queries.GetAllChirps(r.Context())
+	chirps, err := cfg.DB.GetAllChirps(r.Context())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't retrieve chirps", err)
 		return
@@ -38,7 +38,7 @@ func (cfg *ApiConfig) getSingleChirp(w http.ResponseWriter, r *http.Request, chi
 		return
 	}
 
-	chirp, err := cfg.Queries.GetSingleChirp(r.Context(), id)
+	chirp, err := cfg.DB.GetSingleChirp(r.Context(), id)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "couldn't found chirp", err)
 		return
