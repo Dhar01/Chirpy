@@ -21,6 +21,16 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirpID := r.PathValue("chirpID")
+
+	if chirpID != "" {
+		cfg.getSingleChirp(w, r, chirpID)
+	} else {
+		cfg.getAllChirps(w, r)
+	}
+}
+
 type createChirpRequest struct {
 	Body   string    `json:"body"`
 	UserID uuid.UUID `json:"user_id"`
@@ -37,118 +47,46 @@ type ChirpApi struct {
 func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request) {
 	var req createChirpRequest
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "couldn't find JWT", err)
+		return
+	}
+
+	id, err := auth.ValidateJWT(token, cfg.SecretKey)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "couldn't validate JWT", err)
+		return
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "can't decode the body", http.StatusBadRequest)
+		respondWithError(w, http.StatusInternalServerError, "couldn't decode the request", err)
 		return
 	}
 
-	tokenSecret, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		http.Error(w, "Bearer Token Problem", http.StatusBadRequest)
-		return
-	}
-
-	id, err := auth.ValidateJWT(tokenSecret, cfg.SecretKey)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
+	// req.Body validation needed
 	if len(req.Body) > 140 {
 		http.Error(w, "Chirp is too long", http.StatusBadRequest)
 		return
 	}
 
-	info, err := cfg.Queries.CreateChirp(r.Context(), database.CreateChirpParams{
+	chirp, err := cfg.Queries.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body: req.Body,
 		// UserID: req.UserID,
 		UserID: id,
 	})
 
 	if err != nil {
-		http.Error(w, "can't create chirp", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "couldn't create chirp", err)
 		return
 	}
 
-	chirp := ChirpApi{
-		ID:        info.ID,
-		CreatedAt: info.CreatedAt,
-		UpdatedAt: info.UpdatedAt,
-		Body:      info.Body,
-		UserID:    info.UserID,
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(chirp); err != nil {
-		http.Error(w, "An error occurred", http.StatusInternalServerError)
-		return
-	}
-}
-
-func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirpID := r.PathValue("chirpID")
-
-	if chirpID != "" {
-		cfg.getSingleChirp(w, r, chirpID)
-	} else {
-		cfg.getAllChirps(w, r)
-	}
-}
-
-func (cfg *ApiConfig) getAllChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.Queries.GetAllChirps(r.Context())
-
-	if err != nil {
-		http.Error(w, "can't retrieve chirps", http.StatusInternalServerError)
-		return
-	}
-
-	// for i, chrip := range chirps {
-	// 	log.Printf("Chirp %d: %v", i, chrip)
-	// }
-
-	chirpApis := make([]ChirpApi, len(chirps))
-	for i, chirp := range chirps {
-		chirpApis[i] = ChirpApi{
-			ID:        chirp.ID,
-			CreatedAt: chirp.CreatedAt,
-			UpdatedAt: chirp.UpdatedAt,
-			Body:      chirp.Body,
-			UserID:    chirp.UserID,
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(chirpApis); err != nil {
-		http.Error(w, "An error occurred", http.StatusInternalServerError)
-		return
-	}
-}
-
-func (cfg *ApiConfig) getSingleChirp(w http.ResponseWriter, r *http.Request, chirpID string) {
-	id, err := uuid.Parse(chirpID)
-	if err != nil {
-		http.Error(w, "Invalid chirp ID", http.StatusBadRequest)
-		return
-	}
-
-	chirp, err := cfg.Queries.GetSingleChirp(r.Context(), id)
-	if err != nil {
-		http.Error(w, "chirp not exist!", http.StatusNotFound)
-		return
-	}
-
-	info := ChirpApi{
+	respondWithJSON(w, http.StatusOK, ChirpApi{
 		ID:        chirp.ID,
 		CreatedAt: chirp.CreatedAt,
 		UpdatedAt: chirp.UpdatedAt,
 		Body:      chirp.Body,
 		UserID:    chirp.UserID,
-	}
+	})
 
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(info); err != nil {
-		http.Error(w, "can't write to console", http.StatusInternalServerError)
-		return
-	}
 }
