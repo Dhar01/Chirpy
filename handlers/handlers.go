@@ -10,6 +10,7 @@ import (
 type ApiConfig struct {
 	fileserverHits atomic.Int32
 	Queries        *database.Queries
+	SecretKey      string
 }
 
 func (cfg *ApiConfig) MiddlewareMetricsInc(next http.Handler) http.Handler {

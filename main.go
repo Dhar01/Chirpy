@@ -23,6 +23,8 @@ func main() {
 		log.Fatalf("can't connect to database: %v\n", err)
 	}
 
+	secretKey := os.Getenv("SECRET_KEY")
+
 	dbQueries := database.New(db)
 
 	mux := http.NewServeMux()
@@ -33,7 +35,8 @@ func main() {
 	}
 
 	apiCfg := hnd.ApiConfig{
-		Queries: dbQueries,
+		Queries:   dbQueries,
+		SecretKey: secretKey,
 	}
 
 	handler := http.StripPrefix("/app/", http.FileServer(http.Dir("./app")))

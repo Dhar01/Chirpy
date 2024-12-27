@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/Dhar01/Chirpy/internal/auth"
 )
@@ -20,6 +22,14 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var expireTime time.Duration
+
+	expireTime, err := expireLimitSet(req.ExpiresAt)
+	if err != nil {
+		http.Error(w, "Bad expiration value", http.StatusBadRequest)
+		return
+	}
+
 	user, err := cfg.Queries.GetUser(r.Context(), req.Email)
 	if err != nil {
 		http.Error(w, "unauthorized attempt", http.StatusUnauthorized)
@@ -27,7 +37,13 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := auth.CheckPasswordHash(req.Password, user.HashedPassword); err != nil {
-		http.Error(w, "Incorrect email or password", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := auth.MakeJWT(user.ID, cfg.SecretKey, expireTime)
+	if err != nil {
+		http.Error(w, "Malformed Token", http.StatusUnauthorized)
 		return
 	}
 
@@ -36,6 +52,7 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Token:     token,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -43,4 +60,19 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "can't encode the data", http.StatusInternalServerError)
 		return
 	}
+}
+
+func expireLimitSet(expire string) (time.Duration, error) {
+	seconds, err := strconv.ParseInt(expire, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	duration := time.Duration(seconds) * time.Second
+
+	if duration < time.Hour {
+		return duration, nil
+	}
+
+	return time.Hour, nil
 }
