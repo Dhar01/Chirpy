@@ -13,7 +13,7 @@ func (cfg *ApiConfig) HandlerReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg.fileserverHits.Store(0)
+	cfg.FileserverHits.Store(0)
 	if err := cfg.DB.Reset(r.Context()); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't reset database", err)
 		return
