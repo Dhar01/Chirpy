@@ -22,8 +22,6 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var expireTime time.Duration
-
 	expireTime, err := expireLimitSet(req.ExpiresAt)
 	if err != nil {
 		http.Error(w, "Bad expiration value", http.StatusBadRequest)
@@ -37,7 +35,7 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := auth.CheckPasswordHash(req.Password, user.HashedPassword); err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized pass", http.StatusUnauthorized)
 		return
 	}
 
@@ -63,6 +61,10 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func expireLimitSet(expire string) (time.Duration, error) {
+	if expire == "" {
+		return time.Hour, nil
+	}
+
 	seconds, err := strconv.ParseInt(expire, 10, 64)
 	if err != nil {
 		return 0, err

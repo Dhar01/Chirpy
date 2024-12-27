@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Dhar01/Chirpy/internal/auth"
 	"github.com/Dhar01/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -41,6 +42,19 @@ func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	tokenSecret, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		http.Error(w, "Bearer Token Problem", http.StatusBadRequest)
+		return
+	}
+
+	id, err := auth.ValidateJWT(tokenSecret, cfg.SecretKey)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+
 	if len(req.Body) > 140 {
 		http.Error(w, "Chirp is too long", http.StatusBadRequest)
 		return
@@ -48,7 +62,8 @@ func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request
 
 	info, err := cfg.Queries.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   req.Body,
-		UserID: req.UserID,
+		// UserID: req.UserID,
+		UserID: id,
 	})
 
 	if err != nil {

@@ -51,11 +51,24 @@ func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	expireTime, err := expireLimitSet(req.ExpiresAt)
+	if err != nil {
+		http.Error(w, "Bad expiration value", http.StatusBadRequest)
+		return
+	}
+
+	token, err := auth.MakeJWT(person.ID, cfg.SecretKey, expireTime)
+	if err != nil {
+		http.Error(w, "Bad expiration value", http.StatusBadRequest)
+		return
+	}
+
 	user := User{
 		ID:        person.ID,
 		CreatedAt: person.CreatedAt,
 		UpdatedAt: person.UpdatedAt,
 		Email:     person.Email,
+		Token:     token,
 	}
 
 	w.WriteHeader(http.StatusCreated)
