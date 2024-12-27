@@ -1,11 +1,17 @@
 package auth
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
+
+var errAuthorizationNotFound = errors.New("Authorization header not found or malformed")
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
@@ -45,7 +51,13 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	return uuid.Nil, jwt.ErrSignatureInvalid
 }
 
-// func GetBearerToken(headers http.Header) (string, error) {
-// 	var token string
-// 	return token, nil
-// }
+func GetBearerToken(headers http.Header) (string, error) {
+	bearer := headers.Get("Authorization")
+
+	if bearer == "" || !strings.HasPrefix(bearer, "Bearer ") {
+		return "", errAuthorizationNotFound
+	}
+
+	token := strings.TrimSpace(strings.TrimPrefix(bearer, "Bearer"))
+	return token, nil
+}

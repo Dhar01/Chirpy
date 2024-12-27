@@ -12,7 +12,7 @@ func TestJWT(t *testing.T) {
 	tokenSecret := "mysecretkey"
 	expiresIn := time.Hour
 
-	t.Run("testing MakJWT", func(t *testing.T) {
+	t.Run("testing MakeJWT", func(t *testing.T) {
 		token, err := MakeJWT(userID, tokenSecret, expiresIn)
 		if err != nil {
 			t.Fatalf("Expected no error, but got %v", err)
