@@ -23,22 +23,27 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 	return signedToken, nil
 }
 
-// func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
-// 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-// 		return []byte(tokenSecret), nil
-// 	})
-// 	if err != nil {
-// 		return uuid.Nil, err
-// 	}
-// 	if claim, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
-// 		id, err := uuid.Parse(claim.Subject)
-// 		if err != nil {
-// 			return uuid.Nil, err
-// 		}
-// 		return id, nil
-// 	}
-// 	return uuid.Nil, jwt.ErrSignatureInvalid
-// }
+func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(tokenSecret), nil
+	})
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	if claim, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+		id, err := uuid.Parse(claim.Subject)
+
+		if err != nil {
+			return uuid.Nil, err
+		}
+
+		return id, nil
+	}
+
+	return uuid.Nil, jwt.ErrSignatureInvalid
+}
 
 // func GetBearerToken(headers http.Header) (string, error) {
 // 	var token string
