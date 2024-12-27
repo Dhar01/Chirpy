@@ -6,12 +6,9 @@ import (
 )
 
 func (cfg *ApiConfig) HandlerMetrics(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	checkerMethod(w, r, http.MethodPost)
 
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Add("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
 	value := fmt.Sprintf(
