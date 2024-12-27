@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +15,7 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 		Subject:   userID.String(),
 	})
 
-	signedToken, err := token.SignedString(tokenSecret)
+	signedToken, err := token.SignedString([]byte(tokenSecret))
 	if err != nil {
 		return "", err
 	}
@@ -24,14 +23,24 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 	return signedToken, nil
 }
 
-func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
-	var id uuid.UUID
+// func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
+// 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
+// 		return []byte(tokenSecret), nil
+// 	})
+// 	if err != nil {
+// 		return uuid.Nil, err
+// 	}
+// 	if claim, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+// 		id, err := uuid.Parse(claim.Subject)
+// 		if err != nil {
+// 			return uuid.Nil, err
+// 		}
+// 		return id, nil
+// 	}
+// 	return uuid.Nil, jwt.ErrSignatureInvalid
+// }
 
-	return id, nil
-}
-
-func GetBearerToken(headers http.Header) (string, error) {
-	var token string
-
-	return token, nil
-}
+// func GetBearerToken(headers http.Header) (string, error) {
+// 	var token string
+// 	return token, nil
+// }
