@@ -13,5 +13,5 @@ RETURNING *;
 SELECT * FROM users
 WHERE email = $1;
 
--- name: DeleteAllUsers :exec
+-- name: Reset :exec
 DELETE FROM users;
