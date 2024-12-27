@@ -10,15 +10,12 @@ import (
 )
 
 func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	checkerMethod(w, r, http.MethodPost)
 
 	var req createUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+		respondWithError(w, http.StatusInternalServerError, "couldn't decode parameters", err)
 		return
 	}
 
@@ -30,49 +27,45 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := cfg.Queries.GetUser(r.Context(), req.Email)
 	if err != nil {
-		http.Error(w, "unauthorized attempt", http.StatusUnauthorized)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
 	if err := auth.CheckPasswordHash(req.Password, user.HashedPassword); err != nil {
-		http.Error(w, "Unauthorized pass", http.StatusUnauthorized)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
-	token, err := auth.MakeJWT(user.ID, cfg.SecretKey, time.Hour)
+	accessToken, err := auth.MakeJWT(user.ID, cfg.SecretKey, time.Hour)
 	if err != nil {
-		http.Error(w, "Malformed Token", http.StatusUnauthorized)
+		respondWithError(w, http.StatusInternalServerError, "couldn't create access JWT", err)
 		return
 	}
 
-	refToken, err := auth.MakeRefreshToken()
+	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "couldn't create refresh token", err)
 		return
 	}
 
 	if err := cfg.Queries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
-		Refreshtoken: refToken,
+		Refreshtoken: refreshToken,
 		UserID:       user.ID,
 	}); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "couldn't save refresh token", err)
 		return
 	}
 
-	person := User{
-		ID:           user.ID,
-		CreatedAt:    user.CreatedAt,
-		UpdatedAt:    user.UpdatedAt,
-		Email:        user.Email,
-		Token:        token,
-		RefreshToken: refToken,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(person); err != nil {
-		http.Error(w, "can't encode the data", http.StatusInternalServerError)
-		return
-	}
+	respondWithJSON(w, http.StatusOK, response{
+		User: User{
+			ID:        user.ID,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Email:     user.Email,
+		},
+		Token:        accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 // func expireLimitSet(expire string) (time.Duration, error) {
