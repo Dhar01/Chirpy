@@ -1,44 +1,34 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Dhar01/Chirpy/internal/auth"
 )
 
 func (cfg *ApiConfig) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	checkerMethod(w, r, http.MethodPost)
 
-	bearer := r.Header.Get("Authorization")
-	refreshToken := strings.TrimSpace(strings.TrimPrefix(bearer, "Bearer"))
-
-	userID, err := cfg.Queries.GetUserFromRefreshToken(r.Context(), refreshToken)
+	refreshToken, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		respondWithError(w, http.StatusBadRequest, "couldn't find token", err)
 		return
 	}
 
-	accessToken, err := auth.MakeJWT(userID, cfg.SecretKey, time.Hour)
+	user, err := cfg.Queries.GetUserFromRefreshToken(r.Context(), refreshToken)
 	if err != nil {
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		respondWithError(w, http.StatusUnauthorized, "couldn't get user from refresh token", err)
 		return
 	}
 
-	resp := struct {
-		Token string `json:"token"`
-	}{
+	accessToken, err := auth.MakeJWT(user.ID, cfg.SecretKey, time.Hour)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "couldn't validate token", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
 		Token: accessToken,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, "Service error", http.StatusInternalServerError)
-		return
-	}
+	})
 }
