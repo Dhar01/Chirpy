@@ -54,14 +54,13 @@ func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-
 	if len(req.Body) > 140 {
 		http.Error(w, "Chirp is too long", http.StatusBadRequest)
 		return
 	}
 
 	info, err := cfg.Queries.CreateChirp(r.Context(), database.CreateChirpParams{
-		Body:   req.Body,
+		Body: req.Body,
 		// UserID: req.UserID,
 		UserID: id,
 	})

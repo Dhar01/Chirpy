@@ -3,10 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/Dhar01/Chirpy/internal/auth"
+	"github.com/Dhar01/Chirpy/internal/database"
 )
 
 func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
@@ -22,11 +22,11 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expireTime, err := expireLimitSet(req.ExpiresAt)
-	if err != nil {
-		http.Error(w, "Bad expiration value", http.StatusBadRequest)
-		return
-	}
+	// expireTime, err := expireLimitSet(req.ExpiresAt)
+	// if err != nil {
+	// 	http.Error(w, "Bad expiration value", http.StatusBadRequest)
+	// 	return
+	// }
 
 	user, err := cfg.Queries.GetUser(r.Context(), req.Email)
 	if err != nil {
@@ -39,18 +39,33 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.MakeJWT(user.ID, cfg.SecretKey, expireTime)
+	token, err := auth.MakeJWT(user.ID, cfg.SecretKey, time.Hour)
 	if err != nil {
 		http.Error(w, "Malformed Token", http.StatusUnauthorized)
 		return
 	}
 
+	refToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := cfg.Queries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Refreshtoken: refToken,
+		UserID:       user.ID,
+	}); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
 	person := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-		Token:     token,
+		ID:           user.ID,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		Email:        user.Email,
+		Token:        token,
+		RefreshToken: refToken,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -60,21 +75,17 @@ func (cfg *ApiConfig) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func expireLimitSet(expire string) (time.Duration, error) {
-	if expire == "" {
-		return time.Hour, nil
-	}
-
-	seconds, err := strconv.ParseInt(expire, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	duration := time.Duration(seconds) * time.Second
-
-	if duration < time.Hour {
-		return duration, nil
-	}
-
-	return time.Hour, nil
-}
+// func expireLimitSet(expire string) (time.Duration, error) {
+// 	if expire == "" {
+// 		return time.Hour, nil
+// 	}
+// 	seconds, err := strconv.ParseInt(expire, 10, 64)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	duration := time.Duration(seconds) * time.Second
+// 	if duration < time.Hour {
+// 		return duration, nil
+// 	}
+// 	return time.Hour, nil
+// }

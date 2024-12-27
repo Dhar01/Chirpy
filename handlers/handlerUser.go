@@ -11,17 +11,18 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 type createUserRequest struct {
-	Password  string `json:"password"`
-	Email     string `json:"email"`
-	ExpiresAt string `json:"expires_in_seconds"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+	// ExpiresAt string `json:"expires_in_seconds"`
 }
 
 func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -51,13 +52,13 @@ func (cfg *ApiConfig) HandlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	expireTime, err := expireLimitSet(req.ExpiresAt)
-	if err != nil {
-		http.Error(w, "Bad expiration value", http.StatusBadRequest)
-		return
-	}
+	// expireTime, err := expireLimitSet(req.ExpiresAt)
+	// if err != nil {
+	// 	http.Error(w, "Bad expiration value", http.StatusBadRequest)
+	// 	return
+	// }
 
-	token, err := auth.MakeJWT(person.ID, cfg.SecretKey, expireTime)
+	token, err := auth.MakeJWT(person.ID, cfg.SecretKey, time.Hour)
 	if err != nil {
 		http.Error(w, "Bad expiration value", http.StatusBadRequest)
 		return
