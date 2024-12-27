@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync/atomic"
 
 	hnd "github.com/Dhar01/Chirpy/handlers"
 	"github.com/Dhar01/Chirpy/internal/database"
@@ -17,27 +18,35 @@ func main() {
 		log.Fatalf("error loading .env file: %v\n", err)
 	}
 
-	dbURL := os.Getenv("DB_URL")
-	db, err := sql.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatalf("can't connect to database: %v\n", err)
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatalf("PLATFORM must be set")
 	}
 
 	secretKey := os.Getenv("SECRET_KEY")
-
-	dbQueries := database.New(db)
-
-	mux := http.NewServeMux()
-
-	srv := http.Server{
-		Handler: mux,
-		Addr:    ":8080",
+	if secretKey == "" {
+		log.Fatalf("SECRET_KEY must be set")
 	}
+
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatalf("DB_URL must be set")
+	}
+
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("can't connect to database: %v\n", err)
+	}
+	dbQueries := database.New(dbConn)
 
 	apiCfg := hnd.ApiConfig{
-		Queries:   dbQueries,
-		SecretKey: secretKey,
+		FileserverHits: atomic.Int32{},
+		DB:             dbQueries,
+		SecretKey:      secretKey,
+		Platform:       platform,
 	}
+
+	mux := http.NewServeMux()
 
 	handler := http.StripPrefix("/app/", http.FileServer(http.Dir("./app")))
 	mux.Handle("/app/", apiCfg.MiddlewareMetricsInc(handler))
@@ -56,8 +65,15 @@ func main() {
 	mux.HandleFunc("/api/chirps", apiCfg.HandlerChirps)
 	mux.HandleFunc("/api/chirps/{chirpID}", apiCfg.HandlerChirps)
 
-	err = srv.ListenAndServe()
-	if err != nil {
+	port := "8080"
+
+	srv := &http.Server{
+		Handler: mux,
+		Addr:    ":" + port,
+	}
+
+	log.Printf("Serving on port: %s\n", port)
+	if err = srv.ListenAndServe(); err != nil {
 		log.Printf("%v\n", err.Error())
 	}
 }
