@@ -16,9 +16,9 @@ func (cfg *ApiConfig) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bearer := r.Header.Get("Authorization")
-	token := strings.TrimSpace(strings.TrimPrefix(bearer, "Bearer"))
+	refreshToken := strings.TrimSpace(strings.TrimPrefix(bearer, "Bearer"))
 
-	userID, err := cfg.Queries.GetUserFromRefreshToken(r.Context(), token)
+	userID, err := cfg.Queries.GetUserFromRefreshToken(r.Context(), refreshToken)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

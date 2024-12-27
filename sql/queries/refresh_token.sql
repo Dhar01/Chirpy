@@ -20,3 +20,11 @@ SELECT user_id FROM refresh_tokens
 WHERE refreshToken = $1
     AND expires_at > NOW()
     AND revoked_at IS NULL;
+
+
+-- name: RevokeRefreshToken :exec
+UPDATE refresh_tokens
+SET
+    updated_at = NOW(),
+    revoked_at = NOW()
+WHERE refreshToken = $1;

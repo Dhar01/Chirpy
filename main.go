@@ -52,6 +52,7 @@ func main() {
 	mux.HandleFunc("/api/users", apiCfg.HandlerCreateUser)
 	mux.HandleFunc("/api/login", apiCfg.HandlerLogin)
 	mux.HandleFunc("/api/refresh", apiCfg.HandlerRefresh)
+	mux.HandleFunc("/api/revoke", apiCfg.HandlerRevoke)
 	mux.HandleFunc("/api/chirps", apiCfg.HandlerChirps)
 	mux.HandleFunc("/api/chirps/{chirpID}", apiCfg.HandlerChirps)
 
