@@ -2,26 +2,23 @@ package handlers
 
 import (
 	"net/http"
-	"os"
 )
 
 func (cfg *ApiConfig) HandlerReset(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	checkerMethod(w, r, http.MethodPost)
 
-	if platform := os.Getenv("PLATFORM"); platform != "dev" {
+	if cfg.Platform != "dev" {
 		http.Error(w, "Forbidden", http.StatusForbidden)
+		w.Write([]byte("Reset only allowed in dev environment"))
 		return
 	}
 
-	if err := cfg.Queries.DeleteAllUsers(r.Context()); err != nil {
-		http.Error(w, "An error occurred while resetting users", http.StatusInternalServerError)
+	cfg.fileserverHits.Store(0)
+	if err := cfg.DB.Reset(r.Context()); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "couldn't reset database", err)
 		return
 	}
-
-	// cfg.fileserverHits.Store(0)
 
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hits reset to 0 and database reset to initial state"))
 }
