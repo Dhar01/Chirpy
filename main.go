@@ -47,7 +47,7 @@ func main() {
 	mux.HandleFunc("/admin/reset", apiCfg.HandlerReset)
 
 	mux.HandleFunc("/api/healthz", hnd.HandlerReadiness)
-	mux.HandleFunc("/api/users", apiCfg.HandlerCreateUser)
+	mux.HandleFunc("/api/users", apiCfg.HandlerUser)
 	mux.HandleFunc("/api/login", apiCfg.HandlerLogin)
 	mux.HandleFunc("/api/refresh", apiCfg.HandlerRefresh)
 	mux.HandleFunc("/api/revoke", apiCfg.HandlerRevoke)
