@@ -21,6 +21,7 @@ func main() {
 	platform := getEnvVariable("PLATFORM")
 	secretKey := getEnvVariable("SECRET_KEY")
 	dbURL := getEnvVariable("DB_URL")
+	payKey := getEnvVariable("POLKA_KEY")
 
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -33,6 +34,7 @@ func main() {
 		DB:             dbQueries,
 		SecretKey:      secretKey,
 		Platform:       platform,
+		PaymentKey:     payKey,
 	}
 
 	mux := http.NewServeMux()

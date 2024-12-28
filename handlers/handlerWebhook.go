@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Dhar01/Chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -24,6 +25,13 @@ func (cfg *ApiConfig) HandlerWebhooks(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "couldn't decode the response", err)
 		return
 	}
+
+	key, err := auth.GetAPIKey(r.Header)
+	if err != nil || key != cfg.PaymentKey {
+		respondWithError(w, http.StatusUnauthorized, "unauthorized access request", err)
+		return
+	}
+
 
 	userID, err := uuid.Parse(hook.Data.UserID)
 	if err != nil {
