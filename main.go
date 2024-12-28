@@ -18,20 +18,9 @@ func main() {
 		log.Fatalf("error loading .env file: %v\n", err)
 	}
 
-	platform := os.Getenv("PLATFORM")
-	if platform == "" {
-		log.Fatalf("PLATFORM must be set")
-	}
-
-	secretKey := os.Getenv("SECRET_KEY")
-	if secretKey == "" {
-		log.Fatalf("SECRET_KEY must be set")
-	}
-
-	dbURL := os.Getenv("DB_URL")
-	if dbURL == "" {
-		log.Fatalf("DB_URL must be set")
-	}
+	platform := getEnvVariable("PLATFORM")
+	secretKey := getEnvVariable("SECRET_KEY")
+	dbURL := getEnvVariable("DB_URL")
 
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -76,4 +65,13 @@ func main() {
 	if err = srv.ListenAndServe(); err != nil {
 		log.Printf("%v\n", err.Error())
 	}
+}
+
+func getEnvVariable(env string) string {
+	envVar := os.Getenv(env)
+	if envVar == "" {
+		log.Fatalf("%s must be set", env)
+	}
+
+	return envVar
 }
