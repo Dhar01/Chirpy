@@ -16,6 +16,8 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 		cfg.handlerCreateChirps(w, r)
 	case http.MethodGet:
 		cfg.handlerGetChirps(w, r)
+	case http.MethodDelete:
+		cfg.handlerDeleteChirps(w, r)
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
@@ -89,4 +91,46 @@ func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request
 		UserID:    chirp.UserID,
 	})
 
+}
+
+func (cfg *ApiConfig) handlerDeleteChirps(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized: token not found", err)
+		return
+	}
+
+	id, err := auth.ValidateJWT(token, cfg.SecretKey)
+	if err != nil {
+		respondWithError(w, http.StatusForbidden, "Unauthorized", err)
+		return
+	}
+
+	chirpStr := r.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpStr)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "invalid chirp ID", err)
+		return
+	}
+
+	authId, err := cfg.DB.GetIDofChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "somehting wrong", err)
+		return
+	}
+
+	if authId == id {
+		if err := cfg.DB.DeleteChirp(r.Context(), database.DeleteChirpParams{
+			ID:     chirpID,
+			UserID: id,
+		}); err != nil {
+			respondWithError(w, http.StatusNotFound, "chirp doesn't exist", err)
+			return
+		}
+	} else {
+		respondWithError(w, http.StatusForbidden, "what's going on", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

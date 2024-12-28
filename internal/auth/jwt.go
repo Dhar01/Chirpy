@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	errAuthorizationNotFound = errors.New("Authorization header not found or malformed")
-	errInvalidIssuer         = errors.New("invalid issuer")
+	errAuthHeaderNotFound = errors.New("Authorization header not found")
+	errInvalidIssuer      = errors.New("invalid issuer")
 )
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
@@ -35,7 +35,6 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 }
 
 func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
-
 	claimsStruct := jwt.RegisteredClaims{}
 
 	token, err := jwt.ParseWithClaims(
@@ -72,13 +71,13 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 }
 
 func GetBearerToken(headers http.Header) (string, error) {
-	bearer := headers.Get("Authorization")
+	authHeader := headers.Get("Authorization")
 
-	if bearer == "" || !strings.HasPrefix(bearer, "Bearer ") {
-		return "", errAuthorizationNotFound
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		return "", errAuthHeaderNotFound
 	}
 
-	token := strings.TrimSpace(strings.TrimPrefix(bearer, "Bearer"))
+	token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer"))
 	return token, nil
 }
 
