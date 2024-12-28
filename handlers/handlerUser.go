@@ -49,10 +49,11 @@ func (cfg *ApiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 	// }
 
 	respondWithJSON(w, http.StatusCreated, User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyREd: user.IsChirpyRed.Bool,
 	})
 }
 
@@ -105,9 +106,10 @@ func (cfg *ApiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	respondWithJSON(w, http.StatusOK, User{
-		ID:        user.ID,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:          user.ID,
+		Email:       user.Email,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		IsChirpyREd: user.IsChirpyRed.Bool,
 	})
 }

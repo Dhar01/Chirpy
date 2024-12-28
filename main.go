@@ -53,6 +53,7 @@ func main() {
 	mux.HandleFunc("/api/revoke", apiCfg.HandlerRevoke)
 	mux.HandleFunc("/api/chirps", apiCfg.HandlerChirps)
 	mux.HandleFunc("/api/chirps/{chirpID}", apiCfg.HandlerChirps)
+	mux.HandleFunc("/api/polka/webhooks", apiCfg.HandlerWebhooks)
 
 	port := "8080"
 

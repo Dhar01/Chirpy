@@ -1,11 +1,12 @@
 -- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, email, hashed_password)
+INSERT INTO users (id, created_at, updated_at, email, hashed_password, is_chirpy_red)
 VALUES (
     gen_random_uuid(),
     NOW(),
     NOW(),
     $1,
-    $2
+    $2,
+    false
 )
 RETURNING *;
 
@@ -26,6 +27,17 @@ SET
     hashed_password = $1,
     updated_at = NOW()
 WHERE id = $2;
+
+-- name: SetMemberShip :exec
+UPDATE users
+SET
+    is_chirpy_red = true,
+    updated_at = NOW()
+WHERE id = $1;
+
+-- name: CheckMembership :one
+SELECT is_chirpy_red FROM users
+WHERE id = $1;
 
 -- name: Reset :exec
 DELETE FROM users;

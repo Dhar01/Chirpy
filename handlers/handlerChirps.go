@@ -39,11 +39,11 @@ type createChirpRequest struct {
 }
 
 type ChirpApi struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Body      string    `json:"body"`
-	UserID    uuid.UUID `json:"user_id"`
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Body        string    `json:"body"`
+	UserID      uuid.UUID `json:"user_id"`
 }
 
 func (cfg *ApiConfig) handlerCreateChirps(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +109,7 @@ func (cfg *ApiConfig) handlerDeleteChirps(w http.ResponseWriter, r *http.Request
 	chirpStr := r.PathValue("chirpID")
 	chirpID, err := uuid.Parse(chirpStr)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "invalid chirp ID", err)
+		respondWithError(w, http.StatusBadRequest, "invalid chirp ID", err)
 		return
 	}
 
