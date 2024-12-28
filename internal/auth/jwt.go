@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,7 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var errAuthorizationNotFound = errors.New("Authorization header not found or malformed")
+var (
+	errAuthorizationNotFound = errors.New("Authorization header not found or malformed")
+	errInvalidIssuer         = errors.New("invalid issuer")
+)
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
@@ -31,25 +35,40 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 }
 
 func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(tokenSecret), nil
-	})
 
+	claimsStruct := jwt.RegisteredClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&claimsStruct,
+		func(t *jwt.Token) (interface{}, error) {
+			return []byte(tokenSecret), nil
+		},
+	)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	if claim, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
-		id, err := uuid.Parse(claim.Subject)
-
-		if err != nil {
-			return uuid.Nil, err
-		}
-
-		return id, nil
+	userIDString, err := token.Claims.GetSubject()
+	if err != nil {
+		return uuid.Nil, err
 	}
 
-	return uuid.Nil, jwt.ErrSignatureInvalid
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	if issuer != "chirpy" {
+		return uuid.Nil, errInvalidIssuer
+	}
+
+	id, err := uuid.Parse(userIDString)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	return id, nil
 }
 
 func GetBearerToken(headers http.Header) (string, error) {
