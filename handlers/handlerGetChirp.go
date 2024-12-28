@@ -6,10 +6,36 @@ import (
 	"github.com/google/uuid"
 )
 
-func (cfg *ApiConfig) getAllChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DB.GetAllChirps(r.Context())
+func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirpID := r.PathValue("chirpID")
+	authorID := r.URL.Query().Get("author_id")
+
+	if chirpID != "" {
+		cfg.getSingleChirp(w, r, chirpID)
+	} else if authorID != "" {
+		cfg.getChirps(w, r, authorID)
+	} else {
+		cfg.getChirps(w, r, "")
+	}
+}
+
+func (cfg *ApiConfig) getChirps(w http.ResponseWriter, r *http.Request, authorID string) {
+	var id uuid.UUID
+	var err error
+
+	if authorID == "" {
+		id = uuid.Nil
+	} else {
+		id, err = uuid.Parse(authorID)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "couldn't decode authorID", err)
+			return
+		}
+	}
+
+	chirps, err := cfg.DB.GetAllChirps(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "couldn't retrieve chirps", err)
+		respondWithError(w, http.StatusInternalServerError, "couldn't find chirps", err)
 		return
 	}
 

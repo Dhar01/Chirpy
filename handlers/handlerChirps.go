@@ -23,16 +23,6 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirpID := r.PathValue("chirpID")
-
-	if chirpID != "" {
-		cfg.getSingleChirp(w, r, chirpID)
-	} else {
-		cfg.getAllChirps(w, r)
-	}
-}
-
 type createChirpRequest struct {
 	Body   string    `json:"body"`
 	UserID uuid.UUID `json:"user_id"`
